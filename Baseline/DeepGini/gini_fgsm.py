@@ -1,0 +1,48 @@
+from gini_base import *
+from Model.Model_Lenet5 import *
+from Load_dataset import *
+from common import *
+from Draw import *
+from keras.models import load_model
+
+
+if __name__ == "__main__":
+    base_path = os.path.dirname(__file__)
+    # 加载模型
+    # model_path = os.path.join(base_path, "../../Model_weight/Cifar10/Lenet5/Wed-Feb-23-20:33:29-2022.h5")
+    # model = lenet5_cifar10(path=model_path)
+
+    model_path = os.path.join(base_path, "../../Model_weight/Mnist/Lenet5/weights.h5")
+    model = load_model(model_path)
+    # 加载数据
+    # data_path = os.path.join(base_path, "../../Adv/Cifar10/Lenet5/FGSM_perclass=400.npz")
+    data_path = os.path.join(base_path, "../../Adv/Mnist/Lenet5/FGSM_perclass=900.npz")
+    X_train_clean, X_train_adv, Class_train, X_test_clean, X_test_adv, Class_test = load_clean_adv(data_path)
+    # _, _, _, _, X_fp, Y_fp = load_cifar10(onehot=False, sequence=False, split=False)
+    # _, _, X_fp, Y_fp = filter_sample(model, X_fp, Y_fp)
+
+    # 测试
+    test_adv_num = 1000
+    test_clean_num = 4000
+
+    X_clean_test = X_test_clean[:test_clean_num]
+    X_adv_test = X_test_adv[:test_adv_num]
+    X_test = np.concatenate((X_adv_test, X_clean_test), axis=0)
+    Y_test = np.array([1]*test_adv_num + [0]*test_clean_num)
+
+    confidence = model.predict(X_test)
+    gini_score = Gini_score(confidence)
+
+    rank = np.argsort(-gini_score)
+    apfd = improved_APFD(Y_test, Y_test[rank])
+    print("APFD分数：%.5f" % apfd)
+
+    # 绘制曲线
+    # plot_data(path="图/gini.png", data1=curve(Y_test), label1="Ideal",
+    #           data2=curve(Y_test[rank]), label2="Gini",
+    #           Xlabel="Sample", Ylabel="The cumulative number of errors", show=False)
+    print("end")
+
+
+
+
